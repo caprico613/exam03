@@ -45,6 +45,7 @@ float store1[100] = {0};
 int number = 0;
 
 EventQueue queue(32 * EVENTS_EVENT_SIZE);
+EventQueue queue_acc(32 * EVENTS_EVENT_SIZE);
 Thread t;
 Thread t_acc;
 
@@ -112,12 +113,18 @@ int main(){
   // start
   pc.printf("start\r\n");
   t.start(callback(&queue, &EventQueue::dispatch_forever));
-  t_acc.start(&logger_thread);
+  t_acc.start(callback(&queue_acc, &EventQueue::dispatch_forever));
 
   
   // Setup a serial interrupt function of receiving data from xbee
   xbee.attach(xbee_rx_interrupt, Serial::RxIrq);
 
+    while (true)
+    {
+        queue_acc.call(logger_thread);
+        wait(0.1);
+    }
+    
 }
 
 void xbee_rx_interrupt(void)
@@ -196,9 +203,10 @@ void ACC (Arguments *in, Reply *out)   {
     time_sampling = 0;
 }
 
+
+
 void logger_thread(void) {
-    while (true)
-    {
+
         time_sampling++;
         FXOS8700CQ_readRegs(FXOS8700Q_OUT_X_MSB, res, 6);
 
@@ -222,6 +230,6 @@ void logger_thread(void) {
         if(number==100)
             number = 0;
         
-        wait(0.1); 
-    }
+        
+    
 }
